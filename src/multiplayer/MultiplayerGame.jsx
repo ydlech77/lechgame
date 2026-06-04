@@ -50,6 +50,12 @@ export default function MultiplayerGame({
   const [halfImpostor, setHalfImpostor] =
     useState("");
 
+  const [caughtImpostorId, setCaughtImpostorId] =
+  useState(null);
+
+const [waitingForHalfVote, setWaitingForHalfVote] =
+  useState(false);  
+
   const [showWordInput, setShowWordInput] =
     useState(false);
 
@@ -150,48 +156,78 @@ export default function MultiplayerGame({
 
     // VOTE PHASE
     socket.on(
-      "vote-phase",
-      ({ stage }) => {
+  "vote-phase",
+  ({ stage }) => {
 
-        setPhase("vote");
+    setPhase("vote");
 
-        setVoteStage(stage);
+    setVoteStage(stage);
 
-        setVoted(false);
+    setVoted(false);
 
-        setShowGuessInput(false);
-      }
-    );
+    setShowGuessInput(false);
+
+    if (
+      stage === "half"
+    ) {
+
+      setWaitingForHalfVote(
+        false
+      );
+    }
+  }
+);
+
 
     // RESULTS
     socket.on(
-      "vote-results",
-      ({
-        result,
-        stage,
-        realImpostor,
-        halfImpostor,
-      }) => {
+  "vote-results",
+  ({
+    result,
+    stage,
+    realImpostor,
+    halfImpostor,
+    votedOut,
+  }) => {
 
-        setPhase("results");
+    setResult(result);
 
-        setResult(result);
+    if (
+      stage === "waiting"
+    ) {
 
-        // ONLY REVEAL AT END
-        if (
-          stage === "end"
-        ) {
+      setCaughtImpostorId(
+        votedOut
+      );
 
-          setRealImpostor(
-            realImpostor || ""
-          );
+      setWaitingForHalfVote(
+        true
+      );
 
-          setHalfImpostor(
-            halfImpostor || ""
-          );
-        }
-      }
-    );
+      return;
+    }
+
+    setPhase("results");
+
+    if (
+      stage === "end"
+    ) {
+
+      setRealImpostor(
+        realImpostor || ""
+      );
+
+      setHalfImpostor(
+        halfImpostor || ""
+      );
+
+      setWaitingForHalfVote(
+        false
+      );
+    }
+  }
+);
+
 
     // IMPOSTOR GUESS
     socket.on(
@@ -538,77 +574,75 @@ export default function MultiplayerGame({
       {/* ========================= */}
       {phase === "vote" && (
 
-        <div style={styles.card}>
+  <div style={styles.card}>
 
-          <h1>
-            🗳️ Vote
-          </h1>
+    {/* BLOCK IMPOSTOR WHEN CAUGHT */}
+    {voteStage === "half" &&
+    role === "mainImpostor" &&
+    caughtImpostorId === socket.id ? (
 
-          <h2>
-            {voteStage ===
-            "main"
-              ? "Find Main Impostor"
-              : "Find Half Impostor"}
-          </h2>
+      <>
+        <h1>😈 You Were Caught</h1>
+        <h2>Wait for next game...</h2>
+      </>
+    ) : (
+      <>
+        <h1>🗳️ Vote</h1>
 
-          {!voted ? (
+        <h2>
+          {voteStage === "main"
+            ? "Find Main Impostor"
+            : "Find Half Impostor"}
+        </h2>
 
-            players
-              .filter(
-                (player) => {
+        {/* SHOW WAIT IF IMPOSITOR IS GUESSING WORD */}
+        {waitingForHalfVote && voteStage === "main" ? (
+          <>
+            <h2>⏳ Impostor is guessing the word...</h2>
+          </>
+        ) : (
+          <>
+            {!voted ? (
+
+              players
+                .filter((player) => {
 
                   // REMOVE HOST
-                  if (
-                    player.isHost
-                  ) {
-                    return false;
-                  }
+                  if (player.isHost) return false;
 
-                  // REMOVE MAIN IMPOSTOR
-                  // IN HALF ROUND
+                  // REMOVE CAUGHT IMPOSTOR IN HALF ROUND
                   if (
-                    voteStage ===
-                      "half" &&
-                    player.id ===
-                      realImpostor
+                    voteStage === "half" &&
+                    player.id === caughtImpostorId
                   ) {
                     return false;
                   }
 
                   return true;
-                }
-              )
-              .map(
-                (player) => (
-
+                })
+                .map((player) => (
                   <button
-                    key={
-                      player.id
-                    }
-                    style={
-                      styles.voteBtn
-                    }
+                    key={player.id}
+                    style={styles.voteBtn}
                     onClick={() =>
-                      votePlayer(
-                        player.id
-                      )
+                      votePlayer(player.id)
                     }
                   >
-                    {
-                      player.name
-                    }
+                    {player.name}
                   </button>
-                )
-              )
+                ))
 
-          ) : (
+            ) : (
+              <h2>✅ Vote Sent</h2>
+            )}
+          </>
+        )}
+      </>
+    )}
 
-            <h2>
-              ✅ Vote Sent
-            </h2>
-          )}
-        </div>
-      )}
+  </div>
+)}
+
 
       {/* ========================= */}
       {/* RESULTS */}
