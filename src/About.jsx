@@ -10,7 +10,7 @@ export default function About({ setShowAbout }) {
         </p>
 
         <h3>👨‍💻 Creator</h3>
-        <p>Prince Lech</p>
+        <p>Prince Lech, David Adetokunboh, Victor Nnanna, Daniel Agwu, Samuel Nwachukwu, Favour Tony, God'swill Kingsley </p>
         
 
         <h3>💡 Reason</h3>

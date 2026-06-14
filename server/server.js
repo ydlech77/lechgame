@@ -485,15 +485,17 @@ io.on("connection", (socket) => {
 
           // EVERYONE WAIT
           io.to(roomCode).emit(
-            "vote-results",
-            {
-              result:
-                "😈 Main Impostor Caught!",
+  "vote-results",
+  {
+    result:
+      "😈 Main Impostor Caught!",
+    stage:
+      "waiting",
+    votedOut:
+      room.impostorId,
+  }
+);
 
-              stage:
-                "waiting",
-            }
-          );
 
         } else {
 

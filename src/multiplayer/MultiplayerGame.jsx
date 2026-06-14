@@ -68,6 +68,11 @@ const [waitingForHalfVote, setWaitingForHalfVote] =
   const [guessWord, setGuessWord] =
     useState("");
 
+  const isCaughtImpostor =
+  role === "mainImpostor" &&
+  caughtImpostorId ===
+    socket.id;
+
   // =========================
   // SOCKET EVENTS
   // =========================
@@ -180,7 +185,7 @@ const [waitingForHalfVote, setWaitingForHalfVote] =
 
 
     // RESULTS
-    socket.on(
+   socket.on(
   "vote-results",
   ({
     result,
@@ -293,22 +298,33 @@ const [waitingForHalfVote, setWaitingForHalfVote] =
   // VOTE
   // =========================
   const votePlayer =
-    (id) => {
+  (id) => {
 
-      if (voted) return;
+    if (voted) return;
 
-      socket.emit(
-        "vote-player",
-        {
-          roomCode,
-          votedId: id,
-          stage: voteStage,
-          voterId: socket.id,
-        }
-      );
+    // CAUGHT MAIN IMPOSTOR
+    // CANNOT VOTE IN HALF ROUND
+    if (
+      voteStage === "half" &&
+      role === "mainImpostor" &&
+      caughtImpostorId === socket.id
+    ) {
+      return;
+    }
 
-      setVoted(true);
-    };
+    socket.emit(
+      "vote-player",
+      {
+        roomCode,
+        votedId: id,
+        stage: voteStage,
+        voterId: socket.id,
+      }
+    );
+
+    setVoted(true);
+  };
+
 
   // =========================
   // GUESS WORD
